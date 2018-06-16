@@ -9,35 +9,32 @@
 import UIKit
 import CryptoSwift
 
-class ViewController: UIViewController {
-    
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        //allFieldsValid = false
-    }
-    
+class ViewController: UIViewController
+{
     //MARK: Constants
-    let URL_REGISTER_USER = "https://localhost:8080/RegisterUser"
+    let URL_REGISTER_USER = "https://localhost:8080/register"
+    let SALT_LENGTH = 8
     
     var allFieldsValid : Bool?
     {
         didSet
         {
-            if (allFieldsValid!)
+            if (registerButton != nil)
             {
-                registerButton.isEnabled = true
-            }
-            else
-            {
-                if (registerButton != nil){
+                if (allFieldsValid!)
+                {
                     registerButton.isEnabled = true
+                }
+                else
+                {
+                    registerButton.isEnabled = false
                 }
             }
         }
     }
     
     //MARK: Properties
-    @IBOutlet var username: UITextField!{
+    @IBOutlet var email: UITextField!{
         didSet{
             allFieldsValid = validateUserInfo()
         }
@@ -49,7 +46,7 @@ class ViewController: UIViewController {
         }
     }
     
-    @IBOutlet var confirmPasswordPlainText: UITextField!{
+    @IBOutlet var name: UITextField!{
         didSet{
             allFieldsValid = validateUserInfo()
         }
@@ -61,15 +58,15 @@ class ViewController: UIViewController {
     //Registration action that occurs on the register button click.
     @IBAction private func register(_ sender: UIButton)
     {
-        var pass = passwordPlainText.text!
         let password: Array<UInt8> = Array(passwordPlainText.text!.utf8)
-        let salt: Array<UInt8> = Array("nacllcan".utf8)
+        let salt: Array<UInt8> = getSalt()
         do{
             //Get password hash
             let passwordHash = try PKCS5.PBKDF2(password: password, salt: salt, iterations: 4096, variant: .sha256).calculate().toHexString()
             
             //Send username and password to server/database
-            sendJsonToServer(username: username.text!, passwordHash: passwordHash)
+            sendJsonToServer(email: name.text!, passwordHash: passwordHash,
+                             salt: salt.toHexString(), name: name.text!)
         }
         catch{
             print("Error: Hashing password.")
@@ -77,11 +74,13 @@ class ViewController: UIViewController {
     }
     
     //Send a JSON object to the server.
-    private func sendJsonToServer(username : String, passwordHash : String)
+    private func sendJsonToServer(email : String, passwordHash : String, salt : String, name : String)
     {
         // prepare json data
-        let json = ["username": username,
-                     "password": passwordHash]
+        let json = ["email": email,
+                    "password": passwordHash,
+                    "name": name,
+                    "salt": salt]
 
         let jsonData = try? JSONSerialization.data(withJSONObject: json)
     
@@ -106,19 +105,62 @@ class ViewController: UIViewController {
         task.resume()
     }
     
+    //Validation function for all user info.
     private func validateUserInfo() -> Bool
     {
-        if (username == nil || passwordPlainText == nil || confirmPasswordPlainText == nil) || (username.text == nil || passwordPlainText.text == nil || confirmPasswordPlainText.text == nil){
-            return false
-        }
-        if (username.text?.count == 0 || passwordPlainText.text?.count == 0 || confirmPasswordPlainText.text?.count == 0){
-            return false
-        }
-        if !passwordPlainText.text!.elementsEqual(confirmPasswordPlainText.text!) {
-            return false
-        }
-        
         return true
     }
+    
+    //Validates password.
+    private func validatePassword() -> Bool
+    {
+        var valid = false
+        
+        return valid
+    }
+    
+    //MARK: Helpers
+    private func getSalt() -> Array<UInt8>
+    {
+        var saltBytes : Array<UInt8> = [1, 2, 3, 4, 5, 6, 7, 8]
+        /*for _ in 0...SALT_LENGTH
+        {
+            let randomNumber = UInt8(arc4random_uniform(UInt32.max))
+            
+            saltBytes.append(randomNumber)
+        }*/
+        
+        
+        return saltBytes
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
